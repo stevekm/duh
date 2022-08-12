@@ -2,6 +2,7 @@ SHELL:=/bin/bash
 .ONESHELL:
 
 # go mod init sizemap
+# go get code.cloudfoundry.org/bytefmt
 # $ go run main.go .
 # gofmt -l -w .
 

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"code.cloudfoundry.org/bytefmt"
 )
 
 type SizeMapEntry struct {
@@ -15,6 +16,7 @@ type SizeMapEntry struct {
 	Percent   float64
 	BarLength int
 	Bar       string
+	ByteSize string
 }
 
 // get the size of one dir
@@ -58,7 +60,7 @@ func SubDirSizes(subDirPath string) (map[string]int64, error) {
 		return err
 	})
 
-	// fmt.Printf("dirSizes: %v\n", dirSizes)
+	fmt.Printf("dirSizes: %v\n", dirSizes)
 	return dirSizes, err
 }
 
@@ -89,12 +91,14 @@ func FormatMap(sizes map[string]int64, totalSize int64) []SizeMapEntry {
 		percent := CalcPercent(value, totalSize)
 		barLength := CalcBarLength(percent)
 		bar := CreateBar(barLength)
+		byteSize := bytefmt.ByteSize(uint64(value))
 		entry := SizeMapEntry{
 			Path:      key,
 			Size:      value,
 			Percent:   percent,
 			BarLength: barLength,
 			Bar:       bar,
+			ByteSize: byteSize,
 		}
 		sizeMapEntries = append(sizeMapEntries, entry)
 	}
@@ -102,9 +106,8 @@ func FormatMap(sizes map[string]int64, totalSize int64) []SizeMapEntry {
 }
 
 func main() {
-	// curDir := "."
 	args := os.Args[1:]
-	startDir := args[0]
+	startDir := args[0] // curDir := "."
 	sizes, err := SubDirSizes(startDir)
 	if err != nil {
 		log.Fatal(err)
