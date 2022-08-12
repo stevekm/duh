@@ -45,3 +45,9 @@ $ git clone https://github.com/stevekm/duh.git
 $ cd duh
 $ go build -o ./duh ./main.go
 ```
+
+# Example Output
+
+<img width="578" alt="Screen Shot 2022-08-12 at 7 09 44 PM" src="https://user-images.githubusercontent.com/10505524/184455667-3d58d014-c899-488a-b407-808c66827ebb.png">
+
+<img width="731" alt="Screen Shot 2022-08-12 at 7 10 51 PM" src="https://user-images.githubusercontent.com/10505524/184455711-646c5629-f09e-4e97-a428-0725290f3b67.png">
