@@ -9,6 +9,7 @@ SHELL:=/bin/bash
 
 format:
 	gofmt -l -w main.go
+	gofmt -l -w main_test.go
 
 # go test -v ./...
 test:

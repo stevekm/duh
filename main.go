@@ -1,14 +1,14 @@
 package main
 
 import (
+	"code.cloudfoundry.org/bytefmt"
 	"fmt"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 	"sort"
-	"code.cloudfoundry.org/bytefmt"
+	"strings"
 )
 
 type SizeMapEntry struct {
@@ -17,11 +17,11 @@ type SizeMapEntry struct {
 	Percent   float64
 	BarLength int
 	Bar       string
-	ByteSize string
-	StartDir bool
+	ByteSize  string
+	StartDir  bool
 }
 
-func NewSizeMapEntry (path string, size int64, totalSize int64, startDir string) SizeMapEntry {
+func NewSizeMapEntry(path string, size int64, totalSize int64, startDir string) SizeMapEntry {
 	percent := CalcPercent(size, totalSize)
 	barLength := CalcBarLength(percent)
 	bar := CreateBar(barLength)
@@ -32,8 +32,8 @@ func NewSizeMapEntry (path string, size int64, totalSize int64, startDir string)
 		Percent:   percent,
 		BarLength: barLength,
 		Bar:       bar,
-		ByteSize: byteSize,
-		StartDir: false,
+		ByteSize:  byteSize,
+		StartDir:  false,
 	}
 	if entry.Path == startDir {
 		entry.StartDir = true
@@ -61,7 +61,7 @@ func DirSize(dirPath string) (int64, error) {
 // https://stackoverflow.com/questions/71153302/how-to-set-depth-for-recursive-iteration-of-directories-in-filepath-walk-func
 func SubDirSizes(subDirPath string) (map[string]int64, error) {
 	dirSizes := map[string]int64{}
-	maxDepth := 0 // do not recurse below the top level of the dir 
+	maxDepth := 0 // do not recurse below the top level of the dir
 
 	err := filepath.Walk(subDirPath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -71,15 +71,15 @@ func SubDirSizes(subDirPath string) (map[string]int64, error) {
 		// need to try and strip out extraneous / from the path string because we need to use the count of /'s for maxDepth count
 		trimmedPath := strings.TrimLeft(path, subDirPath)
 		depthCount := strings.Count(trimmedPath, string(os.PathSeparator))
-		
+
 		// re-trim leading / if it was present
 		// trimmedPath2 := strings.TrimLeft( trimmedPath, string(os.PathSeparator))
 		// depthCount := strings.Count(trimmedPath2, string(os.PathSeparator))
 		// fmt.Printf("%v subDirPath: %v path: %v trimmedPath: %v\n", depthCount, subDirPath, path, trimmedPath2)
-		
+
 		// depthCount := strings.Count(path, string(os.PathSeparator))
 		// fmt.Printf("%v %v\n", depthCount, path)
-		
+
 		if depthCount > maxDepth { // info.IsDir() && depthCount > maxDepth // fmt.Println("skip", path)
 			return fs.SkipDir
 		}
@@ -122,7 +122,6 @@ func CreateBar(length int) string {
 	return result
 }
 
-
 func FormatLines(entries []SizeMapEntry) []string {
 	lines := []string{}
 
@@ -130,7 +129,7 @@ func FormatLines(entries []SizeMapEntry) []string {
 	var startDirIndex int
 	for i, entry := range entries {
 		if entry.StartDir != true {
-			var line string = entry.ByteSize + "\t" + entry.Path + "\t" + entry.Bar 
+			var line string = entry.ByteSize + "\t" + entry.Path + "\t" + entry.Bar
 			lines = append(lines, line)
 		} else {
 			startDirIndex = i
@@ -141,12 +140,12 @@ func FormatLines(entries []SizeMapEntry) []string {
 	lines = append(lines, "-----")
 	var line string = entries[startDirIndex].ByteSize + "\t" + entries[startDirIndex].Path
 	lines = append(lines, line)
-	
+
 	return lines
 }
 
 func GetDirEntries(startDir string) []SizeMapEntry {
-	// remove any trailing / from the starting path 
+	// remove any trailing / from the starting path
 	// NOTE: This is important because otherwise it messes up the maxDepth calculation for recursion prevention
 	trimmedStartDir := strings.TrimRight(startDir, string(os.PathSeparator))
 
@@ -166,25 +165,17 @@ func GetDirEntries(startDir string) []SizeMapEntry {
 	// sort by path
 	sort.Slice(sizeMapEntries, func(i, j int) bool {
 		return sizeMapEntries[i].Path < sizeMapEntries[j].Path
-		})
+	})
 
 	return sizeMapEntries
 }
 
-
-
-
-
-
-
-
-
 func main() {
 	args := os.Args[1:]
-	startDir := args[0] 
+	startDir := args[0]
 
 	sizeMapEntries := GetDirEntries(startDir)
-	
+
 	lines := FormatLines(sizeMapEntries)
 
 	for _, line := range lines {
