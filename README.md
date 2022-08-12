@@ -12,6 +12,8 @@ Note that due to the need to compute relative sizes, output cannot be displayed 
 
 # Usage
 
+Download a pre-compiled binary from [here](https://github.com/stevekm/duh/releases) and run it like this:
+
 ```
 $ ./duh .
 85K	.git	|
@@ -32,4 +34,12 @@ $ ./duh .
 -----
 1.8G	.
 
+```
+
+Otherwise, build from source using Go version 1.18+:
+
+```
+$ git clone https://github.com/stevekm/duh.git
+$ cd duh
+$ go build -o ./duh ./main.go
 ```
