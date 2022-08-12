@@ -2,10 +2,11 @@ SHELL:=/bin/bash
 .ONESHELL:
 
 # go mod init sizemap
-# $ go run .
+# $ go run main.go .
+# gofmt -l -w .
 
 format:
-	gofmt -l -w .
+	gofmt -l -w main.go
 
 test:
 	set -euo pipefail

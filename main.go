@@ -3,11 +3,19 @@ package main
 import (
 	"fmt"
 	"io/fs"
-	"os"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 )
+
+type SizeMapEntry struct {
+	Path      string
+	Size      int64
+	Percent   float64
+	BarLength int
+	Bar       string
+}
 
 // get the size of one dir
 // https://stackoverflow.com/questions/32482673/how-to-get-directory-total-size
@@ -24,12 +32,6 @@ func DirSize(dirPath string) (int64, error) {
 	})
 	return size, err
 }
-// size, err := DirSize(startDir)
-// if err != nil {
-// 		log.Fatal(err)
-// }
-
-
 
 // get the size of all subdirs
 // https://stackoverflow.com/questions/71153302/how-to-set-depth-for-recursive-iteration-of-directories-in-filepath-walk-func
@@ -46,41 +48,72 @@ func SubDirSizes(subDirPath string) (map[string]int64, error) {
 		}
 		if info.IsDir() {
 			// size += info.Size()
-			subDirSize, _ := DirSize(path) // TODO: handle err ...
+			subDirSize, err := DirSize(path) // TODO: handle err ...
+			if err != nil {
+				log.Fatal(err)
+			}
 			dirSizes[path] = subDirSize
 
 		}
 		return err
 	})
 
-	fmt.Printf("dirSizes: %v\n", dirSizes)
-
+	// fmt.Printf("dirSizes: %v\n", dirSizes)
 	return dirSizes, err
 }
 
-// func FormatSubdirStr(dirMap map[string]int64, curDir string) string {
-// 	var outputStr string
-// 	var totalSize = dirMap[curDir]
-// 	for key, value := range dirMap {
-// 		s +=
-// 	}
-// }
-
-
+// value between 0 and 1
 func CalcPercent(this int64, total int64) float64 {
 	result := float64(this) / float64(total)
 	return result
 }
 
+// bar length should be between 1 and 100
+// TODO: should 80 be the max length?
+func CalcBarLength(percent float64) int {
+	result := int(percent * 100.0)
+	if result < 1 {
+		result = 1
+	}
+	return result
+}
+
+func CreateBar(length int) string {
+	result := strings.Repeat("|", length)
+	return result
+}
+
+func FormatMap(sizes map[string]int64, totalSize int64) []SizeMapEntry {
+	sizeMapEntries := []SizeMapEntry{}
+	for key, value := range sizes {
+		percent := CalcPercent(value, totalSize)
+		barLength := CalcBarLength(percent)
+		bar := CreateBar(barLength)
+		entry := SizeMapEntry{
+			Path:      key,
+			Size:      value,
+			Percent:   percent,
+			BarLength: barLength,
+			Bar:       bar,
+		}
+		sizeMapEntries = append(sizeMapEntries, entry)
+	}
+	return sizeMapEntries
+}
 
 func main() {
-	curDir := "."
-	sizes, err := SubDirSizes(curDir)
+	// curDir := "."
+	args := os.Args[1:]
+	startDir := args[0]
+	sizes, err := SubDirSizes(startDir)
 	if err != nil {
-			log.Fatal(err)
+		log.Fatal(err)
 	}
-	totalSize := sizes[curDir]
-	for key, value := range sizes {
-		fmt.Printf("%v %v: %v\n", key, value, CalcPercent(value, totalSize))
+	totalSize := sizes[startDir]
+
+	sizeMapEntries := FormatMap(sizes, totalSize)
+
+	for _, entry := range sizeMapEntries {
+		fmt.Printf("%v\n", entry)
 	}
 }
