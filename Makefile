@@ -17,15 +17,6 @@ test:
 	go clean -testcache && \
 	go test -v . | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
 
-# need to check these cases
-# go run main.go ./dir1
-# go run main.go ./dir1/
-# go run main.go dir1
-# go run main.go dir1/
-# go run main.go .
-# go run main.go ./
-
-
 run-all: $(DIR1)
 	for i in . ./ ./dir1 ./dir1/ dir1 dir1/ dir1/go; do echo ">>> go run main.go $$i"; go run main.go $$i; done
 	
@@ -59,8 +50,6 @@ build-all:
 
 # ~~~~~ Set up Benchmark dir ~~~~~ #
 # set up a dir with tons of files and some very large duplicate files to test the program against
-
-# all: benchmark-dirs
 
 # https://go.dev/dl/go1.18.3.darwin-amd64.tar.gz
 # https://dl.google.com/go/go1.18.3.darwin-amd64.tar.gz
