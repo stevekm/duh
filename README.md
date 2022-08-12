@@ -1,6 +1,6 @@
 # `duh`
 
-Like `du -h`, except more human readable. Because thats the way you wanted `du -h` to print results anyway. Duh.
+Like `du -h`, except more human readable. Because thats the way you wanted `du` to print results anyway. Duh.
 
 # Features
 
