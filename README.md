@@ -6,6 +6,8 @@ Like `du -h`, except more human readable. Because thats the way you wanted `du` 
 
 Prints the human-readable sizes of each item inside a directory, along with a text graphic to show the relative size of each item compared to the total directory size. So that you can quickly and easily find the items taking up the most space.
 
+Console output on non-Windows systems will be colorized based on both absolute size (file or subdir total bytes) and relative size (percent of total dir space usage) to aid in quickly identifying the most significant storage usages amongst directory contents.
+
 For best results, the input argument to `duh` should be a directory. 
 
 Note that due to the need to compute relative sizes, output cannot be displayed until all files and subdirs inside the directory have been scanned, which might take a while if you have a lot of subdirs with a lot of files (or a slow disk). Scanning speed will be limited by your hardware. 
