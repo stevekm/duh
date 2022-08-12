@@ -1,3 +1,35 @@
 # `duh`
 
-Like `du -h`, except more human readable. Because thats the way you wanted `du -h` to print results anyway.
+Like `du -h`, except more human readable. Because thats the way you wanted `du -h` to print results anyway. Duh.
+
+# Features
+
+Prints the human-readable sizes of each item inside a directory, along with a text graphic to show the relative size of each item compared to the total directory size. So that you can quickly and easily find the items taking up the most space.
+
+For best results, the input argument to `duh` should be a directory. 
+
+Note that due to the need to compute relative sizes, output cannot be displayed until all files and subdirs inside the directory have been scanned, which might take a while if you have a lot of subdirs with a lot of files (or a slow disk). Scanning speed will be limited by your hardware. 
+
+# Usage
+
+```
+$ ./duh .
+85K	.git	|
+55B	.gitignore	|
+2K	Makefile	|
+135B	README.md	|
+11.8M	build	|
+569.1M	dir1	||||||||||||||||||||||||||||||
+706.2M	dir2	||||||||||||||||||||||||||||||||||||||
+432M	dir3	|||||||||||||||||||||||
+1.9M	duh	|
+156B	go.mod	|
+8.2K	go.sum	|
+137.1M	go1.18.3.darwin-amd64.tar.gz	|||||||
+4.7K	main.go	|
+8.6K	main_test.go	|
+816B	notes.md	|
+-----
+1.8G	.
+
+```
