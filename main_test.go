@@ -98,27 +98,46 @@ func TestFindAllFiles(t *testing.T) {
 	tempdir := t.TempDir() 
 	// looks like this;
 	// /var/folders/y4/8rsn2mvj5qv2mk5v5gyk8d2c0000gq/T/TestFindAllFiles3634983381/001
+	tempDirs, tempFiles := createTempFilesDirs1(tempdir)
 
-	t.Run("Test find all files", func(t *testing.T) {
-		tempDirs, tempFiles := createTempFilesDirs1(tempdir)
+	tests := map[string]struct {
+		input string
+		want map[string]int64
+	}{
+		"first": {
+			input: tempdir, 
+			want: map[string]int64{
+				tempdir: 64,
+				tempFiles[2].Name(): 12, // file3.
+				tempDirs[0]: 7, // subdir.1
+				tempDirs[1]: 25,// subdir.2
+				tempDirs[2]: 20, // subdir.3
+			},
+		},
+		"second": {
+			input: tempdir +  string(os.PathSeparator), 
+			want: map[string]int64{
+				tempdir: 64,
+				tempFiles[2].Name(): 12, // file3.
+				tempDirs[0]: 7, // subdir.1
+				tempDirs[1]: 25,// subdir.2
+				tempDirs[2]: 20, // subdir.3
+			},
+		},
+		
+	}
 
-		sizes, err := SubDirSizes(tempdir)
-		if err != nil {
-			log.Fatal(err)
-		}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T){
+			sizes, err := SubDirSizes(tempdir)
+			if err != nil {
+				log.Fatal(err)
+			}
+			got := sizes
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("got vs want mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 
-		// test that we found the expected files
-		gotFiles := sizes
-		wantFiles := map[string]int64{
-			tempdir: 64,
-			tempFiles[2].Name(): 12, // file3.
-			tempDirs[0]: 7, // subdir.1
-			tempDirs[1]: 25,// subdir.2
-			tempDirs[2]: 20, // subdir.3
-		}
-		if diff := cmp.Diff(wantFiles, gotFiles); diff != "" {
-			t.Errorf("got vs want mismatch (-want +got):\n%s", diff)
-		}
-
-	})
 }

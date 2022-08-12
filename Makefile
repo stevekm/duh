@@ -15,3 +15,9 @@ test:
 	set -euo pipefail
 	go clean -testcache && \
 	go test -v . | sed ''/PASS/s//$$(printf "\033[32mPASS\033[0m")/'' | sed ''/FAIL/s//$$(printf "\033[31mFAIL\033[0m")/''
+
+# need to check these cases
+# go run main.go ./dir1
+# go run main.go ./dir1/
+# go run main.go dir1
+# go run main.go dir1/

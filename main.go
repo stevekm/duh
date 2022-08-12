@@ -49,9 +49,11 @@ func SubDirSizes(subDirPath string) (map[string]int64, error) {
 
 		// need to try and strip out extraneous / from the path string because we need to use the count of /'s for maxDepth count
 		trimmedPath := strings.TrimLeft(path, subDirPath)
+		depthCount := strings.Count(trimmedPath, string(os.PathSeparator))
+		
 		// re-trim leading / if it was present
-		trimmedPath2 := strings.TrimLeft( trimmedPath, string(os.PathSeparator))
-		depthCount := strings.Count(trimmedPath2, string(os.PathSeparator))
+		// trimmedPath2 := strings.TrimLeft( trimmedPath, string(os.PathSeparator))
+		// depthCount := strings.Count(trimmedPath2, string(os.PathSeparator))
 		// fmt.Printf("%v subDirPath: %v path: %v trimmedPath: %v\n", depthCount, subDirPath, path, trimmedPath2)
 		
 		// depthCount := strings.Count(path, string(os.PathSeparator))
