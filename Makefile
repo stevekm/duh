@@ -27,12 +27,7 @@ test:
 
 
 run-all:
-	go run main.go .
-	go run main.go ./
-	go run main.go ./dir1
-	go run main.go ./dir1/
-	go run main.go dir1
-	go run main.go dir1/
+	for i in . ./ ./dir1 ./dir1/ dir1 dir1/ dir1/go; do echo ">>> go run main.go $$i"; go run main.go $$i; done
 	
 
 
