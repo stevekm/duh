@@ -23,3 +23,23 @@ test:
 # go run main.go dir1/
 # go run main.go .
 # go run main.go ./
+
+
+
+BIN:duh
+build:
+	go build -o ./$(BIN) ./main.go
+.PHONY:build
+
+# fatal: No names found, cannot describe anything.
+GIT_TAG:=$(shell git describe --tags)
+build-all:
+	mkdir -p build ; \
+	for os in darwin linux windows; do \
+	for arch in amd64 arm64; do \
+	output="build/$(BIN)-v$(GIT_TAG)-$$os-$$arch" ; \
+	if [ "$${os}" == "windows" ]; then output="$${output}.exe"; fi ; \
+	echo "building: $$output" ; \
+	GOOS=$$os GOARCH=$$arch go build -o "$${output}" cmd/main.go ; \
+	done ; \
+	done

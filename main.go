@@ -18,6 +18,7 @@ type SizeMapEntry struct {
 	BarLength int
 	Bar       string
 	ByteSize string
+	StartDir bool
 }
 
 // get the size of one dir
@@ -101,7 +102,7 @@ func CreateBar(length int) string {
 	return result
 }
 
-func FormatMap(sizes map[string]int64, totalSize int64) []SizeMapEntry {
+func FormatMap(sizes map[string]int64, totalSize int64, startDir string) []SizeMapEntry {
 	sizeMapEntries := []SizeMapEntry{}
 	for key, value := range sizes {
 		percent := CalcPercent(value, totalSize)
@@ -115,6 +116,10 @@ func FormatMap(sizes map[string]int64, totalSize int64) []SizeMapEntry {
 			BarLength: barLength,
 			Bar:       bar,
 			ByteSize: byteSize,
+			StartDir: false,
+		}
+		if entry.Path == startDir {
+			entry.StartDir = true
 		}
 		sizeMapEntries = append(sizeMapEntries, entry)
 	}
@@ -130,10 +135,21 @@ func FormatLines(entries []SizeMapEntry) []string {
 		return entries[i].Path < entries[j].Path
 	  })
 
-	for _, entry := range entries {
-		var line string = entry.ByteSize + "\t" + entry.Path + "\t" + entry.Bar 
-		lines = append(lines, line)
+	// make a line for each item except start dir
+	var startDirIndex int
+	for i, entry := range entries {
+		if entry.StartDir != true {
+			var line string = entry.ByteSize + "\t" + entry.Path + "\t" + entry.Bar 
+			lines = append(lines, line)
+		} else {
+			startDirIndex = i
+		}
 	}
+
+	// make start dir line
+	lines = append(lines, "-----")
+	var line string = entries[startDirIndex].ByteSize + "\t" + entries[startDirIndex].Path
+	lines = append(lines, line)
 	
 	return lines
 }
@@ -152,7 +168,7 @@ func main() {
 	}
 	totalSize := sizes[trimmedStartDir]
 
-	sizeMapEntries := FormatMap(sizes, totalSize)
+	sizeMapEntries := FormatMap(sizes, totalSize, startDir)
 
 	lines := FormatLines(sizeMapEntries)
 
