@@ -21,6 +21,26 @@ type SizeMapEntry struct {
 	StartDir bool
 }
 
+func NewSizeMapEntry (path string, size int64, totalSize int64, startDir string) SizeMapEntry {
+	percent := CalcPercent(size, totalSize)
+	barLength := CalcBarLength(percent)
+	bar := CreateBar(barLength)
+	byteSize := bytefmt.ByteSize(uint64(size))
+	entry := SizeMapEntry{
+		Path:      path,
+		Size:      size,
+		Percent:   percent,
+		BarLength: barLength,
+		Bar:       bar,
+		ByteSize: byteSize,
+		StartDir: false,
+	}
+	if entry.Path == startDir {
+		entry.StartDir = true
+	}
+	return entry
+}
+
 // get the size of one dir
 // https://stackoverflow.com/questions/32482673/how-to-get-directory-total-size
 func DirSize(dirPath string) (int64, error) {
@@ -37,7 +57,7 @@ func DirSize(dirPath string) (int64, error) {
 	return size, err
 }
 
-// get the size of all subdirs
+// get the size of all items in the subdir
 // https://stackoverflow.com/questions/71153302/how-to-set-depth-for-recursive-iteration-of-directories-in-filepath-walk-func
 func SubDirSizes(subDirPath string) (map[string]int64, error) {
 	dirSizes := map[string]int64{}
@@ -102,38 +122,9 @@ func CreateBar(length int) string {
 	return result
 }
 
-func FormatMap(sizes map[string]int64, totalSize int64, startDir string) []SizeMapEntry {
-	sizeMapEntries := []SizeMapEntry{}
-	for key, value := range sizes {
-		percent := CalcPercent(value, totalSize)
-		barLength := CalcBarLength(percent)
-		bar := CreateBar(barLength)
-		byteSize := bytefmt.ByteSize(uint64(value))
-		entry := SizeMapEntry{
-			Path:      key,
-			Size:      value,
-			Percent:   percent,
-			BarLength: barLength,
-			Bar:       bar,
-			ByteSize: byteSize,
-			StartDir: false,
-		}
-		if entry.Path == startDir {
-			entry.StartDir = true
-		}
-		sizeMapEntries = append(sizeMapEntries, entry)
-	}
-	return sizeMapEntries
-}
-
 
 func FormatLines(entries []SizeMapEntry) []string {
 	lines := []string{}
-
-	// sort by path
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Path < entries[j].Path
-	  })
 
 	// make a line for each item except start dir
 	var startDirIndex int
@@ -154,22 +145,46 @@ func FormatLines(entries []SizeMapEntry) []string {
 	return lines
 }
 
-func main() {
-	args := os.Args[1:]
-	startDir := args[0] 
-
+func GetDirEntries(startDir string) []SizeMapEntry {
 	// remove any trailing / from the starting path 
 	// NOTE: This is important because otherwise it messes up the maxDepth calculation for recursion prevention
 	trimmedStartDir := strings.TrimRight(startDir, string(os.PathSeparator))
 
+	// get all the file and dir items and their sizes
 	sizes, err := SubDirSizes(trimmedStartDir)
 	if err != nil {
 		log.Fatal(err)
 	}
 	totalSize := sizes[trimmedStartDir]
 
-	sizeMapEntries := FormatMap(sizes, totalSize, startDir)
+	sizeMapEntries := []SizeMapEntry{}
+	for path, size := range sizes {
+		entry := NewSizeMapEntry(path, size, totalSize, trimmedStartDir)
+		sizeMapEntries = append(sizeMapEntries, entry)
+	}
 
+	// sort by path
+	sort.Slice(sizeMapEntries, func(i, j int) bool {
+		return sizeMapEntries[i].Path < sizeMapEntries[j].Path
+		})
+
+	return sizeMapEntries
+}
+
+
+
+
+
+
+
+
+
+func main() {
+	args := os.Args[1:]
+	startDir := args[0] 
+
+	sizeMapEntries := GetDirEntries(startDir)
+	
 	lines := FormatLines(sizeMapEntries)
 
 	for _, line := range lines {

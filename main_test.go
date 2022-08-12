@@ -141,3 +141,45 @@ func TestFindAllFiles(t *testing.T) {
 	}
 
 }
+
+
+
+func TestGetDirEntries(t *testing.T) {
+	tempdir := t.TempDir()
+	tempDirs, tempFiles := createTempFilesDirs1(tempdir)
+
+	tests := map[string]struct {
+		input string
+		want []SizeMapEntry
+	}{
+		"first": {
+			input: tempdir, 
+			want: []SizeMapEntry{
+				NewSizeMapEntry(tempdir, 64, 64, tempdir), //tempdir: 64,
+				NewSizeMapEntry(tempFiles[2].Name(), 12, 64, tempdir), // file3.
+				NewSizeMapEntry(tempDirs[0], 7, 64, tempdir), // subdir.1
+				NewSizeMapEntry(tempDirs[1], 25, 64, tempdir), // subdir.2
+				NewSizeMapEntry(tempDirs[2], 20, 64, tempdir), // subdir.3
+			},
+		},
+		"second": {
+			input: tempdir +  string(os.PathSeparator), 
+			want: []SizeMapEntry{
+				NewSizeMapEntry(tempdir, 64, 64, tempdir), //tempdir: 64,
+				NewSizeMapEntry(tempFiles[2].Name(), 12, 64, tempdir), // file3.
+				NewSizeMapEntry(tempDirs[0], 7, 64, tempdir), // subdir.1
+				NewSizeMapEntry(tempDirs[1], 25, 64, tempdir), // subdir.2
+				NewSizeMapEntry(tempDirs[2], 20, 64, tempdir), // subdir.3
+			},			
+		},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T){
+			got := GetDirEntries(tempdir)
+			// fmt.Printf("%v\n", got)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("got vs want mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
