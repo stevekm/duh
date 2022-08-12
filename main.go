@@ -2,6 +2,7 @@ package main
 
 import (
 	"code.cloudfoundry.org/bytefmt"
+	"github.com/TwiN/go-color"
 	"fmt"
 	"io/fs"
 	"log"
@@ -15,27 +16,24 @@ import (
 var logger = log.New(os.Stderr, "", 0)
 
 type SizeMapEntry struct {
-	Path      string
-	Size      int64
-	Percent   float64
-	BarLength int
-	Bar       string
-	ByteSize  string
-	StartDir  bool
+	Path      string // original file path
+	Size      int64 // original size in bytes
+	Percent   float64 // percent of total dir size that this entry takes up (should be value between 0-1)
+	BarLength int // how long of a text graphic to draw
+	Bar       string // text graphic for the entry
+	StartDir  bool // if this item was the starting directory for search
 }
 
 func NewSizeMapEntry(path string, size int64, totalSize int64, startDir string) SizeMapEntry {
 	percent := CalcPercent(size, totalSize)
 	barLength := CalcBarLength(percent)
 	bar := CreateBar(barLength)
-	byteSize := bytefmt.ByteSize(uint64(size))
 	entry := SizeMapEntry{
 		Path:      path,
 		Size:      size,
 		Percent:   percent,
 		BarLength: barLength,
 		Bar:       bar,
-		ByteSize:  byteSize,
 		StartDir:  false,
 	}
 	if entry.Path == startDir {
@@ -132,6 +130,39 @@ func CreateBar(length int) string {
 	return result
 }
 
+
+
+func FormatSize(size int64) string {
+	// sizeStr := color.Ize(color.Bold, bytefmt.ByteSize(uint64(size)))
+	sizeStr := bytefmt.ByteSize(uint64(size))
+	
+	if size >= 1024 * 1024 * 1024 * 1024 { // T
+		sizeStr = color.Ize(color.Purple, sizeStr)
+	} else if size >= 1024 * 1024 * 1024 { // G
+		sizeStr = color.Ize(color.Cyan, sizeStr)
+	} else if size >= 1024 * 1024 { // M
+		sizeStr = color.Ize(color.Red, sizeStr)
+	} else if size >= 1024 { // K
+		sizeStr = color.Ize(color.Yellow, sizeStr)
+	} else {
+		sizeStr = color.Ize(color.Gray, sizeStr)
+	}
+
+	return sizeStr
+}
+
+
+func FormatEntryLine(entry SizeMapEntry) string {
+	sizeStr := FormatSize(entry.Size)
+	var line string = sizeStr + "\t" + entry.Path + "\t" + entry.Bar
+	return line
+}
+
+func FormatStartDirLine(entry SizeMapEntry) string {
+	line := color.Ize(color.Bold, bytefmt.ByteSize(uint64(entry.Size))) + "\t" + entry.Path
+	return line
+}
+
 // build all the lines of text that should be printed to the console
 func FormatLines(entries []SizeMapEntry) []string {
 	lines := []string{}
@@ -141,7 +172,7 @@ func FormatLines(entries []SizeMapEntry) []string {
 	for i, entry := range entries {
 		if entry.StartDir != true {
 			// NOTE: consider printing just the basename instead of the full path // path.Base(entry.Path)
-			var line string = entry.ByteSize + "\t" + entry.Path + "\t" + entry.Bar
+			line := FormatEntryLine(entry)
 			lines = append(lines, line)
 		} else {
 			startDirIndex = i
@@ -150,7 +181,7 @@ func FormatLines(entries []SizeMapEntry) []string {
 
 	// make start dir line
 	lines = append(lines, "-----")
-	var line string = entries[startDirIndex].ByteSize + "\t" + entries[startDirIndex].Path
+	var line string = FormatStartDirLine(entries[startDirIndex])
 	lines = append(lines, line)
 
 	return lines
