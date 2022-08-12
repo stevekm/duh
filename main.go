@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sort"
 	"code.cloudfoundry.org/bytefmt"
 )
 
@@ -39,28 +40,36 @@ func DirSize(dirPath string) (int64, error) {
 // https://stackoverflow.com/questions/71153302/how-to-set-depth-for-recursive-iteration-of-directories-in-filepath-walk-func
 func SubDirSizes(subDirPath string) (map[string]int64, error) {
 	dirSizes := map[string]int64{}
-	maxDepth := 0
+	maxDepth := 1 // do not recurse below the top level of the dir 
+
 	err := filepath.Walk(subDirPath, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() && strings.Count(path, string(os.PathSeparator)) > maxDepth {
-			// fmt.Println("skip", path)
+
+		// need to try and strip out extraneous / from the path string because we need to use the count of /'s for maxDepth count
+		trimmedPath := strings.TrimLeft(path, subDirPath)
+		depthCount := strings.Count(trimmedPath, string(os.PathSeparator))
+		// fmt.Printf("%v %v %v %v\n", depthCount, subDirPath, path, trimmedPath)
+		
+		if depthCount > maxDepth { // info.IsDir() && depthCount > maxDepth // fmt.Println("skip", path)
 			return fs.SkipDir
 		}
+
 		if info.IsDir() {
-			// size += info.Size()
-			subDirSize, err := DirSize(path) // TODO: handle err ...
+			subDirSize, err := DirSize(path)
 			if err != nil {
 				log.Fatal(err)
 			}
 			dirSizes[path] = subDirSize
 
+		} else {
+			dirSizes[path] = info.Size()
 		}
 		return err
 	})
 
-	fmt.Printf("dirSizes: %v\n", dirSizes)
+	// fmt.Printf("dirSizes: %v\n", dirSizes)
 	return dirSizes, err
 }
 
@@ -105,18 +114,45 @@ func FormatMap(sizes map[string]int64, totalSize int64) []SizeMapEntry {
 	return sizeMapEntries
 }
 
+
+func FormatLines(entries []SizeMapEntry) []string {
+	lines := []string{}
+	for _, entry := range entries {
+		var line string = entry.Path + "\t" + entry.Bar 
+		lines = append(lines, line)
+	}
+
+	// sort by path before pre-pending the byte size
+	sort.Strings(lines)
+
+	sortedLines := []string{}
+	for i, line := range lines {
+		var line = entries[i].ByteSize + "\t" + line
+		sortedLines = append(sortedLines, line)
+	}
+	
+	return sortedLines
+}
+
 func main() {
 	args := os.Args[1:]
-	startDir := args[0] // curDir := "."
-	sizes, err := SubDirSizes(startDir)
+	startDir := args[0] 
+
+	// remove any trailing / from the starting path 
+	// NOTE: This is important because otherwise it messes up the maxDepth calculation for recursion prevention
+	trimmedStartDir := strings.TrimRight(startDir, string(os.PathSeparator))
+
+	sizes, err := SubDirSizes(trimmedStartDir)
 	if err != nil {
 		log.Fatal(err)
 	}
-	totalSize := sizes[startDir]
+	totalSize := sizes[trimmedStartDir]
 
 	sizeMapEntries := FormatMap(sizes, totalSize)
 
-	for _, entry := range sizeMapEntries {
-		fmt.Printf("%v\n", entry)
+	lines := FormatLines(sizeMapEntries)
+
+	for _, line := range lines {
+		fmt.Println(line)
 	}
 }
