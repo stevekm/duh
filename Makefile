@@ -21,3 +21,5 @@ test:
 # go run main.go ./dir1/
 # go run main.go dir1
 # go run main.go dir1/
+# go run main.go .
+# go run main.go ./

@@ -124,21 +124,18 @@ func FormatMap(sizes map[string]int64, totalSize int64) []SizeMapEntry {
 
 func FormatLines(entries []SizeMapEntry) []string {
 	lines := []string{}
+
+	// sort by path
+	sort.Slice(entries, func(i, j int) bool {
+		return entries[i].Path < entries[j].Path
+	  })
+
 	for _, entry := range entries {
-		var line string = entry.Path + "\t" + entry.Bar 
+		var line string = entry.ByteSize + "\t" + entry.Path + "\t" + entry.Bar 
 		lines = append(lines, line)
 	}
-
-	// sort by path before pre-pending the byte size
-	sort.Strings(lines)
-
-	sortedLines := []string{}
-	for i, line := range lines {
-		var line = entries[i].ByteSize + "\t" + line
-		sortedLines = append(sortedLines, line)
-	}
 	
-	return sortedLines
+	return lines
 }
 
 func main() {
