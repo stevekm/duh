@@ -6,8 +6,8 @@ import (
 	"io/fs"
 	"log"
 	"os"
-	"path/filepath"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -54,7 +54,7 @@ func DirSize(dirPath string) (int64, error) {
 			logger.Printf("Skipping path that could not be read %q: %v\n", path, err)
 			return filepath.SkipDir
 		}
-		
+
 		if err != nil {
 			return err
 		}
