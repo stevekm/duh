@@ -130,28 +130,55 @@ func CreateBar(length int) string {
 	return result
 }
 
+func GetByteSizeColor(size int64) string {
+	var col string
+	if size >= 1024*1024*1024*1024 { // T
+		col = color.Purple
+	} else if size >= 1024*1024*1024 { // G
+		col = color.Cyan
+	} else if size >= 1024*1024 { // M
+		col = color.Red
+	} else if size >= 1024 { // K
+		col = color.Yellow
+	} else {
+		col = color.Gray
+	}
+	return col
+}
+
+func GetPercentColor(percent float64) string {
+	var col string
+	if percent >= 0.80 {
+		col = color.Purple
+	} else if percent >= 0.60 {
+		col = color.Cyan
+	} else if percent >= 0.40 {
+		col = color.Red
+	} else if percent >= 0.20 {
+		col = color.Yellow
+	} else {
+		col = color.Gray
+	}
+	return col
+}
+
+func FormatBar(bar string, percent float64) string {
+	col := GetPercentColor(percent)
+	barStr := color.Ize(col, bar)
+	return barStr
+}
+
 func FormatSize(size int64) string {
 	// sizeStr := color.Ize(color.Bold, bytefmt.ByteSize(uint64(size)))
 	sizeStr := bytefmt.ByteSize(uint64(size))
-
-	if size >= 1024*1024*1024*1024 { // T
-		sizeStr = color.Ize(color.Purple, sizeStr)
-	} else if size >= 1024*1024*1024 { // G
-		sizeStr = color.Ize(color.Cyan, sizeStr)
-	} else if size >= 1024*1024 { // M
-		sizeStr = color.Ize(color.Red, sizeStr)
-	} else if size >= 1024 { // K
-		sizeStr = color.Ize(color.Yellow, sizeStr)
-	} else {
-		sizeStr = color.Ize(color.Gray, sizeStr)
-	}
-
+	col := GetByteSizeColor(size)
+	sizeStr = color.Ize(col, sizeStr)
 	return sizeStr
 }
 
 func FormatEntryLine(entry SizeMapEntry) string {
 	sizeStr := FormatSize(entry.Size)
-	var line string = sizeStr + "\t" + entry.Path + "\t" + entry.Bar
+	var line string = sizeStr + "\t" + entry.Path + "\t" + FormatBar(entry.Bar, entry.Percent)
 	return line
 }
 
