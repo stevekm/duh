@@ -106,7 +106,6 @@ func SubDirSizes(subDirPath string) (map[string]int64, error) {
 		return err
 	})
 
-	// fmt.Printf("dirSizes: %v\n", dirSizes)
 	return dirSizes, err
 }
 
@@ -181,7 +180,12 @@ func GetDirEntries(startDir string) []SizeMapEntry {
 
 func main() {
 	args := os.Args[1:]
-	startDir := args[0]
+	var startDir string
+	if len(args) < 1 {
+		startDir = "."
+	} else {
+		startDir = args[0]
+	}	
 
 	sizeMapEntries := GetDirEntries(startDir)
 
