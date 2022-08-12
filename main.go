@@ -71,9 +71,10 @@ func DirSize(dirPath string) (int64, error) {
 func SubDirSizes(subDirPath string) (map[string]int64, error) {
 	dirSizes := map[string]int64{}
 	// do not recurse below the top level of the dir
+	// NOTE: recursion limit might not work correctly if path.Clean() was not used!
 	startingDepth := strings.Count(subDirPath, string(os.PathSeparator))
 	var maxDepth int = 0
-	if subDirPath != "." {
+	if subDirPath != "." { // need special handling for the "." dir path
 		maxDepth = startingDepth + 1
 	}
 
@@ -89,7 +90,7 @@ func SubDirSizes(subDirPath string) (map[string]int64, error) {
 		}
 
 		depthCount := strings.Count(path, string(os.PathSeparator))
-		if depthCount > maxDepth { // info.IsDir() && depthCount > maxDepth // fmt.Println("skip", path)
+		if depthCount > maxDepth {
 			return fs.SkipDir
 		}
 
@@ -125,11 +126,13 @@ func CalcBarLength(percent float64) int {
 	return result
 }
 
+// make the text graphic that will be displayed
 func CreateBar(length int) string {
 	result := strings.Repeat("|", length)
 	return result
 }
 
+// build all the lines of text that should be printed to the console
 func FormatLines(entries []SizeMapEntry) []string {
 	lines := []string{}
 
@@ -137,7 +140,8 @@ func FormatLines(entries []SizeMapEntry) []string {
 	var startDirIndex int
 	for i, entry := range entries {
 		if entry.StartDir != true {
-			var line string = entry.ByteSize + "\t" + entry.Path + "\t" + entry.Bar // path.Base(entry.Path)
+			// NOTE: consider printing just the basename instead of the full path // path.Base(entry.Path)
+			var line string = entry.ByteSize + "\t" + entry.Path + "\t" + entry.Bar
 			lines = append(lines, line)
 		} else {
 			startDirIndex = i
@@ -185,7 +189,7 @@ func main() {
 		startDir = "."
 	} else {
 		startDir = args[0]
-	}	
+	}
 
 	sizeMapEntries := GetDirEntries(startDir)
 
