@@ -2,8 +2,8 @@ package main
 
 import (
 	"code.cloudfoundry.org/bytefmt"
-	"github.com/TwiN/go-color"
 	"fmt"
+	"github.com/TwiN/go-color"
 	"io/fs"
 	"log"
 	"os"
@@ -16,12 +16,12 @@ import (
 var logger = log.New(os.Stderr, "", 0)
 
 type SizeMapEntry struct {
-	Path      string // original file path
-	Size      int64 // original size in bytes
+	Path      string  // original file path
+	Size      int64   // original size in bytes
 	Percent   float64 // percent of total dir size that this entry takes up (should be value between 0-1)
-	BarLength int // how long of a text graphic to draw
-	Bar       string // text graphic for the entry
-	StartDir  bool // if this item was the starting directory for search
+	BarLength int     // how long of a text graphic to draw
+	Bar       string  // text graphic for the entry
+	StartDir  bool    // if this item was the starting directory for search
 }
 
 func NewSizeMapEntry(path string, size int64, totalSize int64, startDir string) SizeMapEntry {
@@ -130,17 +130,15 @@ func CreateBar(length int) string {
 	return result
 }
 
-
-
 func FormatSize(size int64) string {
 	// sizeStr := color.Ize(color.Bold, bytefmt.ByteSize(uint64(size)))
 	sizeStr := bytefmt.ByteSize(uint64(size))
-	
-	if size >= 1024 * 1024 * 1024 * 1024 { // T
+
+	if size >= 1024*1024*1024*1024 { // T
 		sizeStr = color.Ize(color.Purple, sizeStr)
-	} else if size >= 1024 * 1024 * 1024 { // G
+	} else if size >= 1024*1024*1024 { // G
 		sizeStr = color.Ize(color.Cyan, sizeStr)
-	} else if size >= 1024 * 1024 { // M
+	} else if size >= 1024*1024 { // M
 		sizeStr = color.Ize(color.Red, sizeStr)
 	} else if size >= 1024 { // K
 		sizeStr = color.Ize(color.Yellow, sizeStr)
@@ -150,7 +148,6 @@ func FormatSize(size int64) string {
 
 	return sizeStr
 }
-
 
 func FormatEntryLine(entry SizeMapEntry) string {
 	sizeStr := FormatSize(entry.Size)
