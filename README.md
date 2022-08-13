@@ -10,8 +10,6 @@ Console output on non-Windows systems will be colorized based on both absolute s
 
 For best results, the input argument to `duh` should be a directory. 
 
-Note that due to the need to compute relative sizes, output cannot be displayed until all files and subdirs inside the directory have been scanned, which might take a while if you have a lot of subdirs with a lot of files (or a slow disk). Scanning speed will be limited by your hardware. 
-
 # Usage
 
 Download a pre-compiled binary from [here](https://github.com/stevekm/duh/releases) and run it like this:
