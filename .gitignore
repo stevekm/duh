@@ -5,3 +5,5 @@ go1.18.3.darwin-amd64.tar.gz
 duh
 build/
 .DS_Store
+cpu.prof
+mem.prof
