@@ -46,7 +46,7 @@ func NewSizeMapEntry(path string, size int64, totalSize int64, startDir string) 
 // https://stackoverflow.com/questions/32482673/how-to-get-directory-total-size
 func DirSize(dirPath string) (int64, error) {
 	var size int64
-	err := filepath.Walk(dirPath, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.WalkDir(dirPath, func(path string, dirEntry fs.DirEntry, err error) error {
 		// skip item that cannot be read
 		if os.IsPermission(err) {
 			logger.Printf("Skipping path that could not be read %q: %v\n", path, err)
@@ -56,7 +56,11 @@ func DirSize(dirPath string) (int64, error) {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() {
+		if !dirEntry.IsDir() {
+			info, err := dirEntry.Info()
+			if err != nil {
+				return err
+			}
 			size += info.Size()
 		}
 		return err
@@ -76,7 +80,7 @@ func SubDirSizes(subDirPath string) (map[string]int64, error) {
 		maxDepth = startingDepth + 1
 	}
 
-	err := filepath.Walk(subDirPath, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.WalkDir(subDirPath, func(path string, dirEntry fs.DirEntry, err error) error {
 		// skip item that cannot be read
 		if os.IsPermission(err) {
 			logger.Printf("Skipping path that could not be read %q: %v\n", path, err)
@@ -92,7 +96,7 @@ func SubDirSizes(subDirPath string) (map[string]int64, error) {
 			return fs.SkipDir
 		}
 
-		if info.IsDir() {
+		if dirEntry.IsDir() {
 			subDirSize, err := DirSize(path)
 			if err != nil {
 				log.Fatal(err)
@@ -100,6 +104,10 @@ func SubDirSizes(subDirPath string) (map[string]int64, error) {
 			dirSizes[path] = subDirSize
 
 		} else {
+			info, err := dirEntry.Info()
+			if err != nil {
+				return err
+			}
 			dirSizes[path] = info.Size()
 		}
 		return err
