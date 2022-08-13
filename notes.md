@@ -19,3 +19,6 @@ https://theasciicode.com.ar/
 https://stackoverflow.com/questions/52937816/how-to-print-utf-8-or-unicode-characters-in-go-golang-on-windows
 
 use dupefinder code as base for dir finding and size measures
+
+
+https://github.com/coreutils/coreutils/blob/master/src/du.c
