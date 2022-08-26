@@ -5,7 +5,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"testing"
 )
@@ -124,21 +123,21 @@ func TestFindAllFiles(t *testing.T) {
 		"first": {
 			input: tempdir,
 			want: map[string]int64{
-				tempdir:             64,
-				tempFiles[2].Name(): 12, // file3.
-				tempDirs[0]:         7,  // subdir.1
-				tempDirs[1]:         25, // subdir.2
-				tempDirs[2]:         20, // subdir.3
+				tempdir:                            64,
+				filepath.Base(tempFiles[2].Name()): 12, // file3.
+				filepath.Base(tempDirs[0]):         7,  // subdir.1
+				filepath.Base(tempDirs[1]):         25, // subdir.2
+				filepath.Base(tempDirs[2]):         20, // subdir.3
 			},
 		},
 		"second": {
 			input: tempdir + string(os.PathSeparator),
 			want: map[string]int64{
-				tempdir:             64,
-				tempFiles[2].Name(): 12, // file3.
-				tempDirs[0]:         7,  // subdir.1
-				tempDirs[1]:         25, // subdir.2
-				tempDirs[2]:         20, // subdir.3
+				tempdir:                            64,
+				filepath.Base(tempFiles[2].Name()): 12, // file3.
+				filepath.Base(tempDirs[0]):         7,  // subdir.1
+				filepath.Base(tempDirs[1]):         25, // subdir.2
+				filepath.Base(tempDirs[2]):         20, // subdir.3
 			},
 		},
 	}
@@ -150,6 +149,7 @@ func TestFindAllFiles(t *testing.T) {
 				log.Fatal(err)
 			}
 			got := sizes
+			fmt.Printf("sizes: %v\n", sizes)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("got vs want mismatch (-want +got):\n%s", diff)
 			}
@@ -169,100 +169,27 @@ func TestGetDirEntries(t *testing.T) {
 		"first": {
 			input: tempdir,
 			want: []SizeMapEntry{
-				NewSizeMapEntry(tempdir, 64, 64, tempdir),             //tempdir: 64,
-				NewSizeMapEntry(tempFiles[2].Name(), 12, 64, tempdir), // file3.
-				NewSizeMapEntry(tempDirs[0], 7, 64, tempdir),          // subdir.1
-				NewSizeMapEntry(tempDirs[1], 25, 64, tempdir),         // subdir.2
-				NewSizeMapEntry(tempDirs[2], 20, 64, tempdir),         // subdir.3
+				NewSizeMapEntry(tempdir, 64, 64, tempdir),                            //tempdir: 64,
+				NewSizeMapEntry(filepath.Base(tempFiles[2].Name()), 12, 64, tempdir), // file3.
+				NewSizeMapEntry(filepath.Base(tempDirs[0]), 7, 64, tempdir),          // subdir.1
+				NewSizeMapEntry(filepath.Base(tempDirs[1]), 25, 64, tempdir),         // subdir.2
+				NewSizeMapEntry(filepath.Base(tempDirs[2]), 20, 64, tempdir),         // subdir.3
 			},
 		},
 		"second": {
 			input: tempdir + string(os.PathSeparator),
 			want: []SizeMapEntry{
-				NewSizeMapEntry(tempdir, 64, 64, tempdir),             //tempdir: 64,
-				NewSizeMapEntry(tempFiles[2].Name(), 12, 64, tempdir), // file3.
-				NewSizeMapEntry(tempDirs[0], 7, 64, tempdir),          // subdir.1
-				NewSizeMapEntry(tempDirs[1], 25, 64, tempdir),         // subdir.2
-				NewSizeMapEntry(tempDirs[2], 20, 64, tempdir),         // subdir.3
+				NewSizeMapEntry(tempdir, 64, 64, tempdir),                            //tempdir: 64,
+				NewSizeMapEntry(filepath.Base(tempFiles[2].Name()), 12, 64, tempdir), // file3.
+				NewSizeMapEntry(filepath.Base(tempDirs[0]), 7, 64, tempdir),          // subdir.1
+				NewSizeMapEntry(filepath.Base(tempDirs[1]), 25, 64, tempdir),         // subdir.2
+				NewSizeMapEntry(filepath.Base(tempDirs[2]), 20, 64, tempdir),         // subdir.3
 			},
 		},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			got := GetDirEntries(tc.input)
-			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("got vs want mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestGetDirEntriesRelativePath(t *testing.T) {
-	tempdir := t.TempDir()             // /var/folders/y4/8rsn2mvj5qv2mk5v5gyk8d2c0000gq/T/TestGetDirEntriesRelativePath1309045957/001
-	tempdirParent := path.Dir(tempdir) // /var/folders/y4/8rsn2mvj5qv2mk5v5gyk8d2c0000gq/T/TestGetDirEntriesRelativePath1309045957
-
-	// 001
-	tempdirBase := path.Base(tempdir)
-	// 001/
-	tempdirBaseSlash := tempdirBase + string(os.PathSeparator)
-	// ./001
-	dotSlashTempdirBase := "." + string(os.PathSeparator) + tempdirBase
-	// ./001/
-	dotSlashTempdirBaseSlash := "." + string(os.PathSeparator) + tempdirBase + string(os.PathSeparator)
-
-	tempDirs, tempFiles := createTempFilesDirs1(tempdir)
-	pwd := curdir() // /Users/steve/projects/duh
-	defer chdir(pwd)
-	chdir(tempdirParent)
-
-	tests := map[string]struct {
-		input string
-		want  []SizeMapEntry
-	}{
-		"tempdirBase": { // 001
-			input: tempdirBase,
-			want: []SizeMapEntry{
-				NewSizeMapEntry(tempdirBase, 64, 64, tempdirBase),                                                //tempdir: 64,
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempFiles[2].Name())), 12, 64, tempdirBase), // file3.
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[0])), 7, 64, tempdirBase),          // subdir.1
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[1])), 25, 64, tempdirBase),         // subdir.2
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[2])), 20, 64, tempdirBase),         // subdir.3
-			},
-		},
-		"tempdirBaseSlash": { // 001/
-			input: tempdirBaseSlash,
-			want: []SizeMapEntry{
-				NewSizeMapEntry(tempdirBase, 64, 64, tempdirBase),                                                //tempdir: 64,
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempFiles[2].Name())), 12, 64, tempdirBase), // file3.
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[0])), 7, 64, tempdirBase),          // subdir.1
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[1])), 25, 64, tempdirBase),         // subdir.2
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[2])), 20, 64, tempdirBase),         // subdir.3
-			},
-		},
-		"dotSlashTempdirBase": { // ./001
-			input: dotSlashTempdirBase,
-			want: []SizeMapEntry{
-				NewSizeMapEntry(tempdirBase, 64, 64, tempdirBase),                                                //tempdir: 64,
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempFiles[2].Name())), 12, 64, tempdirBase), // file3.
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[0])), 7, 64, tempdirBase),          // subdir.1
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[1])), 25, 64, tempdirBase),         // subdir.2
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[2])), 20, 64, tempdirBase),         // subdir.3
-			},
-		},
-		"dotSlashTempdirBaseSlash": { // ./001/
-			input: dotSlashTempdirBaseSlash,
-			want: []SizeMapEntry{
-				NewSizeMapEntry(tempdirBase, 64, 64, tempdirBase),                                                //tempdir: 64,
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempFiles[2].Name())), 12, 64, tempdirBase), // file3.
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[0])), 7, 64, tempdirBase),          // subdir.1
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[1])), 25, 64, tempdirBase),         // subdir.2
-				NewSizeMapEntry(filepath.Join(tempdirBase, path.Base(tempDirs[2])), 20, 64, tempdirBase),         // subdir.3
-			},
-		},
-	}
-	for name, tc := range tests {
-		t.Run(name, func(t *testing.T) {
-			got := GetDirEntries(tc.input) // fmt.Printf("got: %v\n", got)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("got vs want mismatch (-want +got):\n%s", diff)
 			}

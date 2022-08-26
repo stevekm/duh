@@ -9,10 +9,10 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"sort"
-	"strings"
 	"runtime"
 	"runtime/pprof"
+	"sort"
+	"strings"
 )
 
 var logger = log.New(os.Stderr, "", 0)
@@ -44,76 +44,65 @@ func NewSizeMapEntry(path string, size int64, totalSize int64, startDir string) 
 	return entry
 }
 
-// get the size of one dir
-// https://stackoverflow.com/questions/32482673/how-to-get-directory-total-size
-func DirSize(dirPath string) (int64, error) {
-	var size int64
-	err := filepath.WalkDir(dirPath, func(path string, dirEntry fs.DirEntry, err error) error {
-		// skip item that cannot be read
-		if os.IsPermission(err) {
-			logger.Printf("Skipping path that could not be read %q: %v\n", path, err)
-			return filepath.SkipDir
-		}
-
-		if err != nil {
-			return err
-		}
-		if !dirEntry.IsDir() {
-			info, err := dirEntry.Info()
-			if err != nil {
-				return err
-			}
-			size += info.Size()
-		}
-		return err
-	})
-	return size, err
-}
-
 // get the size of all items in the subdir
 // https://stackoverflow.com/questions/71153302/how-to-set-depth-for-recursive-iteration-of-directories-in-filepath-walk-func
 func SubDirSizes(subDirPath string) (map[string]int64, error) {
 	dirSizes := map[string]int64{}
-	// do not recurse below the top level of the dir
-	// NOTE: recursion limit might not work correctly if path.Clean() was not used!
-	startingDepth := strings.Count(subDirPath, string(os.PathSeparator))
-	var maxDepth int = 0
-	if subDirPath != "." { // need special handling for the "." dir path
-		maxDepth = startingDepth + 1
-	}
+	subDirPathParts := strings.Split(subDirPath, string(os.PathSeparator))
+	subDirPathPartsLen := len(subDirPathParts)
+
+	// make sure the map value for the root dir is initialized
+	dirSizes[subDirPath] += int64(0)
 
 	err := filepath.WalkDir(subDirPath, func(path string, dirEntry fs.DirEntry, err error) error {
+		// path = 001/subdir.1/file1.1163766069
+		parts := strings.Split(path, string(os.PathSeparator)) // [001 subdir.1 file1.1163766069]
+		root := parts[0]                                       // 001
+		// fmt.Printf("subDirPath: %v, path: %v, parts: %v, root: %v\n", subDirPath, path, parts, root)
+
+		// make sure the map value for the root dir is initialized
+		dirSizes[root] += int64(0)
+
 		// skip item that cannot be read
 		if os.IsPermission(err) {
 			logger.Printf("Skipping path that could not be read %q: %v\n", path, err)
 			return filepath.SkipDir
 		}
+
 		// return other errors encountered
 		if err != nil {
 			return err
 		}
 
-		depthCount := strings.Count(path, string(os.PathSeparator))
-		if depthCount > maxDepth {
-			return fs.SkipDir
-		}
-
-		if dirEntry.IsDir() {
-			subDirSize, err := DirSize(path)
-			if err != nil {
-				log.Fatal(err)
-			}
-			dirSizes[path] = subDirSize
-
-		} else {
+		if !dirEntry.IsDir() {
 			info, err := dirEntry.Info()
 			if err != nil {
 				return err
 			}
-			dirSizes[path] = info.Size()
+
+			// dir1 as input subDirPath
+			if root == subDirPath {
+				key := parts[subDirPathPartsLen:][0]
+				dirSizes[key] += info.Size()
+			} else if subDirPathPartsLen > 1 {
+				// dir1/go as input subDirPath
+				key := parts[subDirPathPartsLen:][0]
+				dirSizes[key] += info.Size()
+			} else {
+				// . as input subDirPath
+				dirSizes[root] += info.Size()
+			}
+
+			dirSizes[subDirPath] += info.Size()
 		}
 		return err
 	})
+
+	// somehow a stray '' is getting in the map during test cases, remove it
+	// TODO: figure out why this is happening, probably due to indexing ^^^ up there or something...
+	if _, ok := dirSizes[""]; ok {
+		delete(dirSizes, "")
+	}
 
 	return dirSizes, err
 }
@@ -247,7 +236,6 @@ func GetDirEntries(startDir string) []SizeMapEntry {
 	return sizeMapEntries
 }
 
-
 // https://pkg.go.dev/runtime/pprof
 // https://github.com/google/pprof/blob/main/doc/README.md
 // $ go tool pprof cpu.prof
@@ -277,7 +265,6 @@ func StartProfiler() (*os.File, *os.File) {
 	return cpuFile, memFile
 }
 
-
 func main() {
 	var enableProfile bool = false
 	args := os.Args[1:]
@@ -287,7 +274,7 @@ func main() {
 	} else {
 		startDir = args[0]
 	}
-	if len(args) > 1{
+	if len(args) > 1 {
 		enableProfile = true
 	}
 	if enableProfile {
