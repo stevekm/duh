@@ -13,6 +13,7 @@ import (
 	"runtime/pprof"
 	"sort"
 	"strings"
+	"flag"
 )
 
 var logger = log.New(os.Stderr, "", 0)
@@ -266,18 +267,19 @@ func StartProfiler() (*os.File, *os.File) {
 }
 
 func main() {
-	var enableProfile bool = false
-	args := os.Args[1:]
+	enableProfile := flag.Bool("profile", false, "enable profiling") // * pointer
+	flag.Parse()
+	posArgs := flag.Args() // all positional args passed
+
 	var startDir string
-	if len(args) < 1 {
+
+	if len(posArgs) < 1 {
 		startDir = "."
 	} else {
-		startDir = args[0]
+		startDir = posArgs[0]
 	}
-	if len(args) > 1 {
-		enableProfile = true
-	}
-	if enableProfile {
+
+	if *enableProfile {
 		cpuFile, memFile := StartProfiler()
 		defer cpuFile.Close()
 		defer memFile.Close()
