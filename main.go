@@ -46,6 +46,7 @@ func NewSizeMapEntry(path string, size int64, totalSize int64, startDir string) 
 }
 
 // get the size of all items in the subdir
+// returns a map of path:size for all items in the dir
 // https://stackoverflow.com/questions/71153302/how-to-set-depth-for-recursive-iteration-of-directories-in-filepath-walk-func
 func SubDirSizes(subDirPath string) (map[string]int64, error) {
 	dirSizes := map[string]int64{}
@@ -218,6 +219,7 @@ func GetDirEntries(startDir string) []SizeMapEntry {
 
 	// get all the file and dir items and their sizes
 	sizes, err := SubDirSizes(cleanPath)
+	// fmt.Printf("SubDirSizes sizes: %v\n", sizes)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -236,6 +238,86 @@ func GetDirEntries(startDir string) []SizeMapEntry {
 
 	return sizeMapEntries
 }
+
+// print each entry as soon as its found
+func PrintDirEntries(startDir string) error {
+	var totalSize int64
+	var giantSize int64 = 1024*1024*1024*1024*1024*1024
+
+	// iterate through all items in the directory but do not recurse
+	err := filepath.WalkDir(startDir, func(subPath string, dirEntry fs.DirEntry, err error) error {
+		// fmt.Printf("PrintDirEntries: startDir; %v, subPath; %v, dirEntry; %v, err; %v\n", startDir, subPath, dirEntry, err)
+		// fmt.Printf(">>> subPath: %v, info.IsDir(): %v, info.Size(): %v\n", subPath, info.IsDir(), info.Size())
+
+		// skip item that cannot be read
+		if os.IsPermission(err) {
+			logger.Printf("Skipping path that could not be read %q: %v\n", subPath, err)
+			return filepath.SkipDir
+		}
+
+		// return other errors encountered
+		if err != nil {
+			return err
+		}
+
+		// skip if its the root path
+		if subPath == startDir {
+			return nil
+		}
+
+		// if its a file
+		if !dirEntry.IsDir() {
+			info, err := dirEntry.Info()
+			if err != nil {
+				return err
+			}
+			// fmt.Printf("dirEntry: %v, size: %v\n", dirEntry, info.Size())
+
+			totalSize += info.Size()
+			sizeMapEntry := NewSizeMapEntry(subPath, info.Size(), giantSize, startDir)
+			line := FormatEntryLine(sizeMapEntry)
+			fmt.Printf("%v\n", line)
+		} else {
+			// its a dir ; get the SubDirSizes
+			cleanPath := path.Clean(subPath)
+			sizes, err := SubDirSizes(cleanPath)
+			// fmt.Printf("SubDirSizes sizes: %v\n", sizes)
+			if err != nil {
+				log.Fatal(err)
+			}
+			totalSubPathSize := sizes[cleanPath]
+			// fmt.Printf("sizes: %v, totalSubPathSize: %v\n", sizes, totalSubPathSize)
+			totalSize += totalSubPathSize
+			sizeMapEntry := NewSizeMapEntry(subPath, totalSubPathSize, giantSize, startDir)
+			line := FormatEntryLine(sizeMapEntry)
+			fmt.Printf("%v\n", line)
+			return filepath.SkipDir
+		}
+
+		return err
+	})
+
+	// make start dir line
+	fmt.Println("-----")
+	// fmt.Printf("--- totalSize: %v\n", totalSize)
+	fmt.Println(FormatStartDirLine(SizeMapEntry{startDir, totalSize, 0, 0, "", true}))
+	return err
+}
+
+
+func PrintDirEntries2(startDir string) error {
+	fileInfo, err := os.Stat(startDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%v\n", fileInfo)
+	fmt.Printf("soze: %v\n", fileInfo.Size())
+	return nil
+}
+
+
+
+
 
 // https://pkg.go.dev/runtime/pprof
 // https://github.com/google/pprof/blob/main/doc/README.md
@@ -268,6 +350,7 @@ func StartProfiler() (*os.File, *os.File) {
 
 func main() {
 	enableProfile := flag.Bool("profile", false, "enable profiling") // * pointer
+	noPrintBar := flag.Bool("nb", false, "disable print the bar next to each entry")
 	flag.Parse()
 	posArgs := flag.Args() // all positional args passed
 
@@ -286,11 +369,22 @@ func main() {
 		defer pprof.StopCPUProfile()
 	}
 
-	sizeMapEntries := GetDirEntries(startDir)
+	if ! *noPrintBar { // print bar is enabled
+		// this method gathers all entries before it starts printing
+		// so that it can calculate the size of the bar graph needed for each item
+		sizeMapEntries := GetDirEntries(startDir)
 
-	lines := FormatLines(sizeMapEntries)
+		lines := FormatLines(sizeMapEntries)
 
-	for _, line := range lines {
-		fmt.Println(line)
+		for _, line := range lines {
+			fmt.Println(line)
+		}
+	} else {
+		// if we are not printing the bar graph we can print items as soon as they are ready
+		// use go routine and channel to queue up each item for printing
+		// once its done being calculated
+		PrintDirEntries(startDir)
+		// PrintDirEntries2(startDir)
 	}
+
 }
